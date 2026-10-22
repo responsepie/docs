@@ -1,0 +1,15 @@
+name: latency
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "### $(curl -s https://ipinfo.io/org) | $(curl -s https://ipinfo.io/city), $(curl -s https://ipinfo.io/region)"
+          probe() { for i in 1 2 3 4 5; do
+            curl -so /dev/null --connect-timeout 5 -w '%{time_connect} %{time_namelookup}\n' "$1"
+          done | awk '{print ($1-$2)*1000}' | sort -n | sed -n 3p; }
+          for u in https://ec2.us-east-1.amazonaws.com https://ec2.us-east-2.amazonaws.com \
+                   https://ec2.us-west-2.amazonaws.com https://ec2.eu-central-1.amazonaws.com \
+                   http://ash-speed.hetzner.com http://hil-speed.hetzner.com http://fsn1-speed.hetzner.com
+          do printf "%-40s %6.1f ms\n" "$u" "$(probe $u)"; done
